@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- No 'unsafe-inline' anywhere: this is what neutralises <script> tags and
+       onclick= handlers that might be embedded in an untrusted .md file.
+       The file: scheme is listed explicitly because 'self' is unreliable for
+       file:// origins. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self' file:; style-src 'self' file:; img-src 'self' file: data:; font-src 'self' file: data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+  <title>Markdown Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header id="titlebar">
+    <div id="tabstrip" role="tablist" aria-label="Open files"></div>
+    <button id="open-btn" class="strip-btn" title="Open markdown files (Ctrl+O)" aria-label="Open markdown files">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>
+    </button>
+    <div id="controls-spacer"></div>
+  </header>
+
+  <div id="split">
+    <section id="viewer" aria-label="Markdown viewer">
+      <main id="content" tabindex="-1">
+      <div id="empty-state">
+        <svg class="empty-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M16 6h20l12 12v40H16z"/>
+          <path d="M36 6v12h12"/>
+          <path d="M24 32h16M24 40h16M24 48h10"/>
+        </svg>
+        <h1>Drop a markdown file here</h1>
+        <p>Drag <code>.md</code> files straight from File Explorer, or press <kbd>Ctrl</kbd>+<kbd>O</kbd> to browse. Drop a folder to open every markdown file inside it.</p>
+      </div>
+      </main>
+      <div id="viewer-actions">
+        <button id="highlight-btn" aria-pressed="true">Highlight</button>
+      </div>
+    </section>
+
+    <button id="editor-toggle" title="Toggle editor (Ctrl+E)" aria-expanded="false" aria-label="Toggle editor">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg>
+    </button>
+
+    <section id="editor" aria-label="Markdown editor">
+      <textarea id="editor-source" spellcheck="false" aria-label="Markdown source"></textarea>
+      <div id="editor-actions">
+        <button id="save-btn" disabled>Save</button>
+      </div>
+    </section>
+  </div>
+
+  <footer id="statusbar">
+    <span id="status-path" title="Click to show in File Explorer"></span>
+    <span id="status-meta"></span>
+  </footer>
+
+  <div id="dropzone" aria-hidden="true">
+    <div class="dropzone-card">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
+      <span>Release to open</span>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

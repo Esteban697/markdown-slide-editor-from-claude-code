@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node -e \"const M=require\\('markdown-it'\\); const T=require\\('markdown-it-task-lists'\\); const h=require\\('highlight.js'\\); const md=new M\\({html:true}\\).use\\(T\\); console.log\\('markdown-it type:', typeof M\\); console.log\\('tasklists type:', typeof T\\); console.log\\('hljs type:', typeof h.highlight\\); console.log\\(md.render\\('# Hi\\\\n\\\\n- [x] done\\\\n\\\\n```js\\\\nlet a=1\\\\n```'\\)\\);\")"
+    ]
+  }
+}

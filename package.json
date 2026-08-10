@@ -1,0 +1,19 @@
+{
+  "name": "mdview",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dark-mode markdown viewer for Windows 11 with drag-and-drop tabs",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "shortcut": "powershell -NoProfile -ExecutionPolicy Bypass -File make-shortcut.ps1"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^15.0.0",
+    "markdown-it-task-lists": "^2.1.1"
+  }
+}

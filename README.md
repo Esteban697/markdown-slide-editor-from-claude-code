@@ -77,18 +77,29 @@ extensions: `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`, `.mdwn`.
   while you were looking at a different one get a blue dot.
 - **Split editor.** `Ctrl+E` slides a markdown source editor in beside the
   viewer (arrow flips to close it again). Changes render in the viewer as you
-  type, and the viewer's scrollbar tracks the editor's — scroll the editor to
-  70% and the viewer follows to roughly the same level. `Ctrl+S` or the
-  **Save** button writes back to the same file, preserving its line endings
-  and byte-order mark. Auto-reload and `Ctrl+R` are paused while a tab has
-  unsaved edits, so the watcher can't clobber them; closing such a tab — or
-  the window — asks first. A red dot marks a tab with unsaved changes.
+  type — re-renders are debounced (180 ms) and keep the scroll ratio, so
+  typing never makes the page jump — and the viewer's scrollbar tracks the
+  editor's: scroll the editor to 70% and the viewer follows to roughly the
+  same level. Each tab remembers its own editor scroll position, so switching
+  tabs picks up where you left off. `Ctrl+S` or the **Save** button writes
+  back to the same file, preserving its line endings and byte-order mark, and
+  briefly shows **Saved ✓** when it lands. Files that failed to open can't be
+  edited. Auto-reload and `Ctrl+R` are paused while a tab has unsaved edits,
+  so the watcher can't clobber them; closing such a tab — or the window —
+  asks first. A red dot marks a tab with unsaved changes.
 - **Session memory.** Open tabs, the active tab, each tab's scroll position,
-  your zoom level and the window geometry are restored on next launch. Files
-  that were moved or deleted are dropped silently.
+  your zoom level, the window geometry and whether the editor panel was open
+  are restored on next launch. Files that were moved or deleted are dropped
+  silently.
 - **Relative images** (`![](./diagram.png)`) resolve against the markdown file's
   own folder.
 - **External links** open in your default browser, not in the app window.
+- **Hover spotlight.** Rest the mouse on a paragraph (or a heading, list, code
+  block, table…) in the viewer and the rest of the document dims while the
+  pointed-to content keeps its full colour. Move away and it fades back. This
+  is viewer-only — the editor panel never dims. A **Highlight** button below
+  the viewer toggles it on and off (on by default; the choice is remembered
+  between launches).
 - The status bar shows the file path — click it to reveal the file in Explorer.
 
 ## Files
