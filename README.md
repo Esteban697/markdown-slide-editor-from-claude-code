@@ -1,4 +1,8 @@
-# Markdown Viewer
+This project was implemented entirely with Claude Code (Vibe Coding) as follows:
+- The "Viewer" panel that first appears when opening and shows the enriched formatted text for reading was built using Opus 5 with paid API tokens.
+- The "Editor" panel than appears to the right to make changes to the current file and save with lower button was built using Omniroute with only free models.
+
+# Markdown Viewer (and Editor)
 
 A small dark-mode markdown **viewer** and **editor** for Windows 11. It opens
 markdown files, renders them enriched (headings, tables, code highlighting,
