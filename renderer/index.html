@@ -21,6 +21,14 @@
   </header>
 
   <div id="split">
+    <section id="outline" aria-label="Document outline">
+      <div id="outline-list" role="tree"></div>
+    </section>
+
+    <button id="outline-toggle" title="Toggle outline (Ctrl+B)" aria-expanded="false" aria-label="Toggle outline">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 4l-4 4 4 4"/></svg>
+    </button>
+
     <section id="viewer" aria-label="Markdown viewer">
       <main id="content" tabindex="-1">
       <div id="empty-state">
@@ -63,6 +71,10 @@
   </div>
 
   <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Hidden mirror that replicates #editor-source metrics, so outline jumps can
+       measure the exact scroll offset of a source line (see scrollEditorToLine). -->
+  <div id="editor-measure" aria-hidden="true"></div>
 
   <script src="renderer.js"></script>
 </body>

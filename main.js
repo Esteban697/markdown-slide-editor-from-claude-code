@@ -56,7 +56,23 @@ function slugify (text) {
     .replace(/-+/g, '-') || 'section'
 }
 
-// Give every heading a stable id so in-document `#anchor` links work.
+// Clean display text for the outline: keep only plain text and inline-code
+// children so `**em**`, `` `code` ``, `[link](url)` and `# tags` are stripped
+// instead of showing their raw markers.
+function headingText (inline) {
+  if (inline && inline.type === 'inline' && Array.isArray(inline.children) && inline.children.length) {
+    const text = inline.children
+      .filter((c) => c.type === 'text' || c.type === 'code_inline')
+      .map((c) => c.content)
+      .join('')
+      .trim()
+    if (text) return text
+  }
+  return inline && inline.content ? inline.content.trim() : ''
+}
+
+// Give every heading a stable id so in-document `#anchor` links work, and collect
+// the outline (level, id, clean text, exact source line) for the left panel.
 md.core.ruler.push('heading_anchors', (state) => {
   const used = new Map()
   for (let i = 0; i < state.tokens.length; i++) {
@@ -66,7 +82,14 @@ md.core.ruler.push('heading_anchors', (state) => {
     const base = slugify(inline && inline.content ? inline.content : '')
     const seen = used.get(base) || 0
     used.set(base, seen + 1)
-    token.attrSet('id', seen === 0 ? base : `${base}-${seen}`)
+    const id = seen === 0 ? base : `${base}-${seen}`
+    token.attrSet('id', id)
+    state.env.outline.push({
+      level: Number(token.tag[1]),
+      id,
+      text: headingText(inline),
+      line: token.map ? token.map[0] : 0,
+    })
   }
 })
 
@@ -107,7 +130,8 @@ function pathToFileUrl (absolute) {
 }
 
 function renderMarkdown (source, filePath) {
-  return md.render(source, { docDir: path.dirname(filePath) })
+  const env = { docDir: path.dirname(filePath), outline: [] }
+  return { html: md.render(source, env), outline: env.outline }
 }
 
 // ---------------------------------------------------------------------------
@@ -334,7 +358,9 @@ ipcMain.handle('file:read', async (_event, target) => {
       throw new Error(`File is too large to render (${(stat.size / 1048576).toFixed(1)} MB)`)
     }
     const source = await fsp.readFile(target, 'utf8')
-    result.html = renderMarkdown(source, target)
+    const rendered = renderMarkdown(source, target)
+    result.html = rendered.html
+    result.outline = rendered.outline
     result.source = source // raw markdown, for the editor panel
     result.words = (source.match(/\S+/g) || []).length
     result.modified = stat.mtimeMs
@@ -351,7 +377,8 @@ ipcMain.handle('file:read', async (_event, target) => {
 // resolution and link-tagging rules in the main process where they belong.
 ipcMain.handle('file:render', (_event, source, filePath) => {
   if (typeof source !== 'string') throw new Error('Invalid source')
-  return { html: renderMarkdown(source, filePath), words: (source.match(/\S+/g) || []).length }
+  const rendered = renderMarkdown(source, filePath)
+  return { html: rendered.html, words: (source.match(/\S+/g) || []).length, outline: rendered.outline }
 })
 
 ipcMain.handle('file:save', async (_event, target, source, eol, bom) => {

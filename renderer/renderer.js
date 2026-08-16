@@ -14,16 +14,23 @@ const editorToggle = document.getElementById('editor-toggle')
 const editorSource = document.getElementById('editor-source')
 const saveBtn = document.getElementById('save-btn')
 const highlightBtn = document.getElementById('highlight-btn')
+const outlineToggle = document.getElementById('outline-toggle')
+const outlinePanel = document.getElementById('outline')
+const editorMeasure = document.getElementById('editor-measure')
 
 const MIN_FS = 11
 const MAX_FS = 28
 
-/** @type {Array<{path,name,dir,html,error,words,scroll,stale,source,lastSaved,dirty,eol,bom,editorScroll}>} */
+/** @type {Array<{path,name,dir,html,error,words,scroll,stale,source,lastSaved,dirty,eol,bom,editorScroll,outline}>} */
 let tabs = []
 let activeIndex = -1
 let fontSize = 16
 let restoring = true
 let editorOpen = false
+let outlineOpen = false
+let outlineJump = false // suppress editor→viewer sync right after an outline jump
+let outlineButtons = new Map() // heading id -> <button>
+let outlineHeadingEls = [] // cached headings whose id is in the outline
 let previewSeq = 0
 let previewTimer = null
 
@@ -176,6 +183,7 @@ function renderContent () {
 function render () {
   renderTabs()
   renderContent()
+  renderOutline()
   renderEditor()
   saveSession()
 }
@@ -333,9 +341,11 @@ async function runPreview () {
     if (seq !== previewSeq || activeTab() !== tab) return // superseded
     tab.html = result.html
     tab.words = result.words
+    tab.outline = result.outline
     doc.innerHTML = result.html
     // The re-render replaced the spotlighted block; drop the stale dim state.
     clearSpotlight()
+    renderOutline()
     // Jump without animating — scroll-behavior: smooth would make typing drag.
     content.style.scrollBehavior = 'auto'
     content.scrollTop = ratio * content.scrollHeight
@@ -379,6 +389,137 @@ async function saveActiveTab () {
     saveBtn.disabled = false
     showToast(`Save failed: ${error.message || String(error)}`)
   }
+}
+
+// ---------------------------------------------------------------------------
+// Outline panel (left side)
+// ---------------------------------------------------------------------------
+
+function renderOutline () {
+  outlinePanel.textContent = ''
+  outlineButtons = new Map()
+  outlineHeadingEls = []
+  const tab = activeTab()
+
+  if (!tab || tab.error) {
+    outlineToggle.disabled = true
+    if (outlineOpen) setOutlineOpen(false) // mirror renderEditor's auto-close
+    return
+  }
+  outlineToggle.disabled = false
+
+  const items = tab.outline || []
+  if (!items.length) {
+    const empty = document.createElement('div')
+    empty.className = 'outline-empty'
+    empty.textContent = 'No headings'
+    outlinePanel.appendChild(empty)
+    return
+  }
+
+  for (const entry of items) {
+    const btn = document.createElement('button')
+    btn.className = 'outline-item'
+    btn.dataset.level = entry.level // drives CSS indentation
+    btn.textContent = entry.text
+    btn.title = entry.text
+    btn.addEventListener('click', () => outlineClick(entry))
+    outlinePanel.appendChild(btn)
+    outlineButtons.set(entry.id, btn)
+  }
+
+  // Cache the rendered headings that correspond to outline entries (excludes
+  // id-less HTML headings) so active tracking stays cheap.
+  outlineHeadingEls = Array.from(
+    content.querySelectorAll('.doc h1, .doc h2, .doc h3, .doc h4, .doc h5, .doc h6')
+  ).filter((el) => outlineButtons.has(el.id))
+  requestAnimationFrame(updateActiveOutline)
+}
+
+function setOutlineOpen (open) {
+  outlineOpen = open
+  document.body.classList.toggle('outline-open', open)
+  outlineToggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+}
+
+function toggleOutline () {
+  if (!activeTab()) return
+  setOutlineOpen(!outlineOpen)
+  saveSession()
+}
+
+outlineToggle.addEventListener('click', toggleOutline)
+
+/** Character offset of the start of `lineIndex` (0-based) in `source`. */
+function lineStartChar (source, lineIndex) {
+  if (lineIndex <= 0) return 0
+  let pos = 0
+  for (let l = 0; l < lineIndex; l++) {
+    const nl = source.indexOf('\n', pos)
+    if (nl === -1) return source.length
+    pos = nl + 1
+  }
+  return pos
+}
+
+/**
+ * Scroll the editor textarea so the heading's source line is visible. A
+ * `line × lineHeight` estimate breaks on wrapped lines; a fraction estimate
+ * breaks near the doc's end. Instead, a hidden mirror div replicates the
+ * textarea's metrics and is filled with the source prefix up to the target
+ * line, so scrollHeight gives the exact scroll offset.
+ */
+function scrollEditorToLine (tab, lineIndex) {
+  const char = lineStartChar(tab.source, lineIndex)
+  const measure = () => {
+    editorMeasure.textContent = tab.source.slice(0, char)
+    editorMeasure.style.width = editorSource.clientWidth + 'px'
+    const padBottom = parseFloat(getComputedStyle(editorSource).paddingBottom)
+    editorSource.scrollTop = Math.max(0, editorMeasure.scrollHeight - padBottom)
+    tab.editorScroll = editorSource.scrollTop
+  }
+  measure()
+  requestAnimationFrame(measure) // re-measure once layout settles
+  // If the jump didn't change the scroll position, no scroll event fires to
+  // clear the guard — clear it a frame later, well after any event would have.
+  requestAnimationFrame(() => requestAnimationFrame(() => { outlineJump = false }))
+}
+
+function outlineClick (entry) {
+  // Position the viewer synchronously and exactly (auto = no smooth animation,
+  // so the editor sync below can't fight it mid-scroll).
+  content.style.scrollBehavior = 'auto'
+  scrollToAnchor(entry.id)
+  content.style.scrollBehavior = ''
+  const tab = editableTab()
+  if (editorOpen && tab) {
+    outlineJump = true
+    scrollEditorToLine(tab, entry.line)
+  }
+}
+
+/** A heading counts as active while it's within this many px of the viewport top. */
+const OUTLINE_OFFSET = 32 // > the .doc heading scroll-margin-top of 24px
+
+function updateActiveOutline () {
+  if (!outlineOpen || !outlineHeadingEls.length) return
+  const tab = activeTab()
+  if (!tab || tab.error) return
+  const threshold = content.scrollTop + OUTLINE_OFFSET
+  let activeId = ''
+  for (const el of outlineHeadingEls) {
+    if (el.offsetTop <= threshold) activeId = el.id
+    else break
+  }
+  let changed = false
+  for (const [id, btn] of outlineButtons) {
+    const isActive = id === activeId
+    if (btn.classList.contains('active') !== isActive) {
+      btn.classList.toggle('active', isActive)
+      changed = true
+    }
+  }
+  if (changed && activeId) outlineButtons.get(activeId).scrollIntoView({ block: 'nearest' })
 }
 
 // ---------------------------------------------------------------------------
@@ -487,8 +628,12 @@ async function reloadTab (index, { keepScroll = true } = {}) {
 function setFontSize (px) {
   fontSize = Math.min(MAX_FS, Math.max(MIN_FS, px))
   document.documentElement.style.setProperty('--content-fs', `${fontSize}px`)
+  requestAnimationFrame(updateActiveOutline)
   saveSession()
 }
+
+// Reflow (window resize) changes heading offsetTop; re-run active tracking.
+window.addEventListener('resize', () => requestAnimationFrame(updateActiveOutline))
 
 // ---------------------------------------------------------------------------
 // Session
@@ -503,6 +648,7 @@ function saveSession () {
     active: activeIndex,
     fontSize,
     editorOpen,
+    outlineOpen,
     spotlightEnabled,
   })
 }
@@ -529,6 +675,7 @@ async function restoreSession () {
   restoring = false
   if (typeof session.spotlightEnabled === 'boolean') spotlightEnabled = session.spotlightEnabled
   if (session.editorOpen) setEditorOpen(true)
+  if (session.outlineOpen) setOutlineOpen(true)
   renderHighlightButton()
   render()
 }
@@ -650,6 +797,10 @@ editorSource.addEventListener('scroll', () => {
   const tab = editableTab()
   if (!tab || !editorOpen) return
   tab.editorScroll = editorSource.scrollTop
+  if (outlineJump) {
+    outlineJump = false // consume the programmatic jump; the viewer is already positioned
+    return
+  }
   syncViewerToEditor()
 })
 
@@ -658,6 +809,7 @@ content.addEventListener('scroll', () => {
   const tab = activeTab()
   if (!tab) return
   tab.scroll = content.scrollTop
+  updateActiveOutline()
   clearTimeout(scrollSaveTimer)
   scrollSaveTimer = setTimeout(saveSession, 400)
 })
@@ -692,6 +844,12 @@ window.addEventListener('keydown', (event) => {
   if (ctrl && event.key.toLowerCase() === 'e') {
     event.preventDefault()
     toggleEditor()
+    return
+  }
+
+  if (ctrl && event.key.toLowerCase() === 'b') {
+    event.preventDefault()
+    toggleOutline()
     return
   }
 

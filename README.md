@@ -1,6 +1,7 @@
 This project was implemented entirely with Claude Code (Vibe Coding) as follows:
 - The "Viewer" panel that first appears when opening and shows the enriched formatted text for reading was built using Opus 5 with paid API tokens.
 - The "Editor" panel than appears to the right to make changes to the current file and save with lower button was built using Omniroute with only free models.
+- The "Outline" panel that appears on the left and lists the document's headings for quick navigation was built using Ollama cloud models.
 
 # Markdown Viewer (and Editor)
 
@@ -12,6 +13,8 @@ maximise it, resize it, drag it between monitors.
 Editing is optional. Slide the editor in beside the viewer with `Ctrl+E` (or
 the arrow at the right edge), watch your changes render live, and save them
 back to the same file with `Ctrl+S`.
+
+![Animated preview of the Markdown viewer and editor](docs/Md_Editor_animated.webp)
 
 ## Running it
 
@@ -69,6 +72,7 @@ extensions: `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`, `.mdwn`.
 | `Ctrl`+`9` | Jump to last tab |
 | `Ctrl`+`R` or `F5` | Reload current file |
 | `Ctrl`+`E` | Toggle the editor panel |
+| `Ctrl`+`B` | Toggle the outline panel |
 | `Ctrl`+`S` | Save the edited file |
 | `Ctrl`+`+` / `Ctrl`+`-` / `Ctrl`+`0` | Zoom text in / out / reset |
 | `Ctrl`+mouse wheel | Zoom text |
@@ -91,6 +95,13 @@ extensions: `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`, `.mdwn`.
   edited. Auto-reload and `Ctrl+R` are paused while a tab has unsaved edits,
   so the watcher can't clobber them; closing such a tab — or the window —
   asks first. A red dot marks a tab with unsaved changes.
+- **Outline panel.** `Ctrl+B` (or the arrow at the left edge) slides a heading
+  tree in beside the viewer. Every heading — down to level six — is listed,
+  indented by depth, and clicking one scrolls the viewer to it, and the editor
+  to the matching source line when it's open. The heading you're reading stays
+  highlighted as you scroll, and the list refreshes live as you type in the
+  editor. Documents with no headings show a "No headings" placeholder, and
+  whether the outline was open is remembered between launches.
 - **Session memory.** Open tabs, the active tab, each tab's scroll position,
   your zoom level, the window geometry and whether the editor panel was open
   are restored on next launch. Files that were moved or deleted are dropped

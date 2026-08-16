@@ -352,6 +352,128 @@ body.editor-open #editor {
 #save-btn:disabled { opacity: 0.4; cursor: default; }
 #save-btn.saved { background: var(--success); }
 
+/* --------------------------------------------------------------------------
+   Outline split (outline | toggle | viewer | toggle | editor)
+   -------------------------------------------------------------------------- */
+
+#outline-toggle {
+  -webkit-app-region: no-drag;
+  display: grid;
+  place-items: center;
+  flex: 0 0 16px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: var(--bg-titlebar);
+  color: var(--text-faint);
+  cursor: default;
+}
+
+#outline-toggle:hover { background: var(--bg-hover); color: var(--text); }
+#outline-toggle:disabled { opacity: 0.5; pointer-events: none; }
+
+#outline-toggle svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* Closed: chevron points at the panel (←). Open: flips to point back (→). */
+  transition: transform 180ms ease;
+}
+
+body.outline-open #outline-toggle svg { transform: rotate(180deg); }
+
+#outline {
+  flex: 0 0 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg);
+  transition: flex-basis 180ms ease;
+}
+
+body.outline-open #outline {
+  flex: 0 0 260px; /* narrow sidebar, not half-window */
+  border-right: 1px solid var(--border);
+}
+
+#outline::-webkit-scrollbar { width: 10px; }
+#outline::-webkit-scrollbar-track { background: var(--bg); }
+#outline::-webkit-scrollbar-thumb {
+  background: #39414f;
+  border: 2px solid var(--bg);
+  border-radius: 5px;
+}
+#outline::-webkit-scrollbar-thumb:hover { background: #4b5566; }
+
+.outline-item {
+  display: block;
+  width: 100%;
+  padding: 5px 12px;
+  border: none;
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: default;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-item:hover { background: var(--bg-hover); color: var(--text); }
+
+.outline-item.active {
+  border-left-color: var(--accent);
+  background: #6aa9ff14;
+  color: var(--text-strong);
+}
+
+/* Indentation by heading level — declarative selectors, CSP-safe (no inline styles). */
+.outline-item[data-level="1"] { padding-left: 10px; }
+.outline-item[data-level="2"] { padding-left: 24px; }
+.outline-item[data-level="3"] { padding-left: 38px; }
+.outline-item[data-level="4"] { padding-left: 52px; }
+.outline-item[data-level="5"] { padding-left: 66px; }
+.outline-item[data-level="6"] { padding-left: 80px; }
+
+.outline-empty {
+  padding: 16px 14px;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* When both panels are open, give the editor half of the remaining width so the
+   viewer isn't crushed on narrow windows (292 = 260 outline + 16 + 16 toggles). */
+body.editor-open.outline-open #editor { flex: 0 0 calc((100% - 292px) / 2); }
+
+/* Hidden mirror used by scrollEditorToLine. Metrics must match #editor-source
+   exactly so its scrollHeight equals the textarea's wrapped line heights. */
+#editor-measure {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  font-family: var(--mono);
+  font-size: calc(var(--content-fs) - 1px);
+  line-height: 1.6;
+  padding: 14px 16px;
+  tab-size: 4;
+  box-sizing: border-box;
+}
+
 .doc {
   max-width: 860px;
   margin: 0 auto;
