@@ -19,3 +19,10 @@ Thumbs.db
 
 # Machine-local Claude Code settings (not shared)
 .claude/settings.local.json
+
+# Secrets — never commit
+*.pem
+*.key
+*.p12
+*.pfx
+service-account*.json
